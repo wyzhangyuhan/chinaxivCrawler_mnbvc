@@ -5,6 +5,7 @@ import time
 import jsonlines
 from tqdm import tqdm
 from bs4 import BeautifulSoup
+from utils import extract_text
 
 TIME_INTERVAL = 0.5
 
@@ -46,8 +47,12 @@ def get_chinaxiv_category(html_text):
 
     # 打印提取的<a>标签
     for a in a_tags:
-        cate_link.append("https://chinaxiv.org" + a["href"])
-        print(f'URL: {a["href"]}, Text: {a.text}')
+        tmp_dict = dict()
+        tmp_dict['link'] = "https://chinaxiv.org" + a["href"]
+        tmp_cate, _ = extract_text(a.text)
+        tmp_dict['cate'] = tmp_cate
+        cate_link.append(tmp_dict)
+        print(f'URL: {a["href"]}, Text: {tmp_cate}')
 
     return cate_link
 
@@ -169,35 +174,39 @@ def save_stage_link_res(links, file_name):
 
 def load_links(file_name):
     links = []
-    with open(f"./{file_name}", "r") as f:
-        tmp = f.readlines()
-    for t in tmp:
-        links.append(t.replace('\n', ''))
+    if 'jsonl' in file_name:
+        with jsonlines.open(f"{file_name}", "r") as reader:
+            for item in reader:
+                links.append(item)
+    else:
+        with open(f"./{file_name}", "r") as f:
+            tmp = f.readlines()
+        for t in tmp:
+            links.append(t.replace('\n', ''))
     return links
 
-def save_pdf_res(file_name, pdf_res):
+def save_dict_res(file_name, pdf_res):
     with jsonlines.open(f"{file_name}", "w") as writer:
         for item in pdf_res:
             writer.write(item)
 
 if __name__ == "__main__":
 
-    if os.path.exists("./chinaxiv_cate_link.txt"):
-        cate_links = load_links("chinaxiv_cate_link.txt")
+    if os.path.exists("./chinaxiv_cate_link.jsonl"):
+        cate_links = load_links("./chinaxiv_cate_link.jsonl")
     else:
         index = "https://chinaxiv.org/home.htm"
         html_text = get_html_from_url(index)
         cate_links = get_chinaxiv_category(html_text)
-        save_stage_link_res(cate_links, "chinaxiv_cate_link.txt")
+        save_dict_res("./chinaxiv_cate_link.jsonl", cate_links)
 
-    
     time_links_files = os.listdir("./time_links")
     
     if len(time_links_files) != len(cate_links):
         for idx, link in enumerate(cate_links):
-            html_text = get_html_from_url(link)
+            html_text = get_html_from_url(link['link'])
             time_links = get_time_link(html_text)
-            save_stage_link_res(time_links, f"./time_links/chinaxiv_time_link_{idx}.txt")
+            save_stage_link_res(time_links, f"./time_links/chinaxiv_time_link_{link['cate']}.txt")
     
     else:
         for idx, file in tqdm(enumerate(time_links_files), total=len(time_links_files)):
@@ -211,7 +220,5 @@ if __name__ == "__main__":
                 tmp = traverse_category_link(link)
                 if tmp is not None:
                     pdf_links += tmp
-            save_pdf_res(f"./pdf_links/pdf_links_{idx}.jsonl", pdf_links)
-
-
+            save_dict_res(f"./pdf_links/pdf_links_{idx}.jsonl", pdf_links)
 
