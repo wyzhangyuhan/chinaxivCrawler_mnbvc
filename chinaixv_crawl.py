@@ -5,7 +5,7 @@ import time
 import jsonlines
 from tqdm import tqdm
 from bs4 import BeautifulSoup
-from utils import extract_text
+from utils import extract_text, mark_finish, load_links, segment_restart
 
 TIME_INTERVAL = 0.5
 
@@ -172,19 +172,6 @@ def save_stage_link_res(links, file_name):
         for link in links:
             f.write(link+'\n')
 
-def load_links(file_name):
-    links = []
-    if 'jsonl' in file_name:
-        with jsonlines.open(f"{file_name}", "r") as reader:
-            for item in reader:
-                links.append(item)
-    else:
-        with open(f"./{file_name}", "r") as f:
-            tmp = f.readlines()
-        for t in tmp:
-            links.append(t.replace('\n', ''))
-    return links
-
 def save_dict_res(file_name, pdf_res):
     with jsonlines.open(f"{file_name}", "w") as writer:
         for item in pdf_res:
@@ -206,19 +193,23 @@ if __name__ == "__main__":
         for idx, link in enumerate(cate_links):
             html_text = get_html_from_url(link['link'])
             time_links = get_time_link(html_text)
-            save_stage_link_res(time_links, f"./time_links/chinaxiv_time_link_{link['cate']}.txt")
+            save_stage_link_res(time_links, f"./time_links/{link['cate']}.txt")
+
     
-    else:
-        for idx, file in tqdm(enumerate(time_links_files), total=len(time_links_files)):
-            pdf_links = []
-            time_links = load_links(f"./time_links/{file}")
-    
-            #final
-            for link in time_links:
-                if link is None or len(link) < 5:
-                    break
-                tmp = traverse_category_link(link)
-                if tmp is not None:
-                    pdf_links += tmp
-            save_dict_res(f"./pdf_links/pdf_links_{idx}.jsonl", pdf_links)
+    crawl_list = segment_restart()
+    print(crawl_list)
+
+    for idx, file in tqdm(enumerate(crawl_list), total=len(crawl_list)):
+        pdf_links = []
+        time_links = load_links(f"./time_links/{file}.txt")
+
+        #final
+        for link in time_links:
+            if link is None or len(link) < 5:
+                break
+            tmp = traverse_category_link(link)
+            if tmp is not None:
+                pdf_links += tmp
+        save_dict_res(f"./pdf_links/{file}.jsonl", pdf_links)
+        mark_finish(file, len(pdf_links))
 
