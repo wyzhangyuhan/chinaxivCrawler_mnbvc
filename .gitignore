@@ -1,4 +1,7 @@
 /pdf_links/*
+/done/*
 /time_links/*
-!/pdf_links/pdf_links_13.jsonl
-!/time_links/chinaxiv_time_link_0.txt
+/__pycache__
+!/pdf_links/光学.jsonl
+!/time_links/光学.txt
+!/done/光学
