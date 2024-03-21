@@ -1,5 +1,6 @@
 /pdf_links/*
 /done/*
+/.vscode
 /time_links/*
 /__pycache__
 !/pdf_links/光学.jsonl

@@ -8,8 +8,10 @@ from bs4 import BeautifulSoup
 from utils import extract_text, mark_finish, load_links, segment_restart
 
 TIME_INTERVAL = 0.5
-
+global session
+session=requests.Session()
 def get_html_from_url(url):
+    global session
     time.sleep(TIME_INTERVAL)
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.102 Safari/537.36",
@@ -19,7 +21,7 @@ def get_html_from_url(url):
         "DNT": "1",  # Do Not Track Request Header
         "Connection": "keep-alive"
     }
-    response = requests.get(url, headers=headers)
+    response = session.get(url, headers=headers)
 
     # 确保请求成功
     if response.status_code == 200:
@@ -149,12 +151,14 @@ def get_start_url(html_text, raw_url):
 
 def traverse_category_link(url):
     pdf_links = []
-    match = re.search(r'pageId=(\d+)', url)
-    if match:
-        pageId = match.group(1)
+
     
     page_text = get_html_from_url(url)
     traverse_url, page_nums = get_start_url(page_text, url)
+    match = re.search(r'pageId=(\d+)', traverse_url)
+    if match:
+        pageId = match.group(1)
+    traverse_url = f'https://chinaxiv.org/user/search.htm?pageId={pageId}&setId=recordList&currentPage=0'
     page_nums = int(page_nums)
     for idx in range(page_nums):
 
@@ -162,6 +166,7 @@ def traverse_category_link(url):
         page_text = get_html_from_url(traverse_url)
         if not chinaxiv_empty(page_text):
             pdf_links += get_download_link(page_text)
+            # pdf_links = list(set(pdf_links))
         else:
             return pdf_links
         
@@ -173,6 +178,7 @@ def save_stage_link_res(links, file_name):
             f.write(link+'\n')
 
 def save_dict_res(file_name, pdf_res):
+    # pdf_res = list(set(pdf_res))
     with jsonlines.open(f"{file_name}", "w") as writer:
         for item in pdf_res:
             writer.write(item)
