@@ -39,7 +39,6 @@ def load_links(file_name):
             links.append(t.replace('\n', ''))
     return links
 
-
 def segment_restart():
     done_list = os.listdir('./done')
 

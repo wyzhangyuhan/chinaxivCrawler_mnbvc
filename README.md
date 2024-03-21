@@ -5,7 +5,9 @@
 
 ## 启动命令
 ```bash
-python chinaixv_crawl.py
+python chinaixv_crawl.py # 链接爬取程序
+
+python downloader.py --num_shard={一个文件需要几个进程下载} --data_file=chinaxivCrawler_mnbvc/pdf_links/安全科学技术.jsonl --save_path={存放的文件夹}
 ```
 
 ## 输出格式
@@ -26,9 +28,13 @@ python chinaixv_crawl.py
 -- time_links           # 爬虫中间结果，方便中间恢复
 -- chinaixv_crawl.py    # 主函数
 -- utils.py             # 一些小函数
+-- downloader.py        # 对爬取到的论文链接进行下载
 ```
 
 ## 功能
 
 - 全量爬虫；爬取chinaxiv的全量论文数据代码
 - 断点恢复；爬取过程按类别为一进度，按类别断点恢复
+
+## 结果预览
+见docs
