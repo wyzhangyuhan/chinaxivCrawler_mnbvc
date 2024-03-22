@@ -38,7 +38,7 @@ python downloader.py --num_shard={一个文件需要几个进程下载} --data_f
 
 ## 结果预览
 - 文件下载
-![文件下载结果](/chinaxivCrawler_mnbvc/docs/downloading.png)
+![文件下载结果](/docs/downloading.png)
 
 - 下载好的文件
-![文件下载目录](/chinaxivCrawler_mnbvc/docs/saved_pdf.png)
+![文件下载目录](/docs/saved_pdf.png)
