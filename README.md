@@ -37,4 +37,8 @@ python downloader.py --num_shard={一个文件需要几个进程下载} --data_f
 - 断点恢复；爬取过程按类别为一进度，按类别断点恢复
 
 ## 结果预览
-见docs
+- 文件下载
+![文件下载结果](/chinaxivCrawler_mnbvc/docs/downloading.png)
+
+- 下载好的文件
+![文件下载目录](/chinaxivCrawler_mnbvc/docs/saved_pdf.png)
