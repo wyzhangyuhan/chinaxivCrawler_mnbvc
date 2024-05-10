@@ -12,6 +12,7 @@ from concurrent.futures import ThreadPoolExecutor, TimeoutError
 DOWNLOAD_INTERVAL = 0.5
 
 global downloaded
+global log_url
 
 def link_downloader(url, save_path):
     """
@@ -29,7 +30,7 @@ def link_downloader(url, save_path):
 
         # 发送GET请求
         response = requests.get(url, headers=headers)
-
+        
         # 检查请求是否成功
         if response.status_code == 200:
             # 写入文件
@@ -38,10 +39,16 @@ def link_downloader(url, save_path):
             pdf_file_name = pdf_file_name.replace("\"", "")
             global downloaded
             if pdf_file_name in downloaded:
+                print("已下载！")
+                with jsonlines.open(f'{save_path}/log.jsonl', 'a') as file:
+                    file.write({"url":url})
                 return pdf_file_name
             
             with open(f'{save_path}/{pdf_file_name}', 'wb') as file:
                 file.write(response.content)
+            
+            with jsonlines.open(f'{save_path}/log.jsonl', 'a') as file:
+                file.write({"url":url})
             
             downloaded.add(pdf_file_name)
             return pdf_file_name
@@ -84,9 +91,30 @@ def file_downloader(link, save_path):
             print('下载已取消')
 
 def traverse_data(shard, save_path):
+    global log_url
     for data in tqdm(shard, total=len(shard)):
+        if data['link'][0] in log_url:
+            continue
         file_downloader(data['link'][0], save_path)
 
+def downloaded_recovery(save_path):
+
+    already_downloaded = set()
+    dealt_url=set()
+    # 检查路径下的每一个文件和文件夹
+    for filename in os.listdir(save_path):
+        # 完整的文件路径
+        full_path = os.path.join(save_path, filename)
+        # 检查是否为文件且扩展名为.pdf
+        if os.path.isfile(full_path) and filename.endswith('.pdf'):
+            already_downloaded.add(filename)
+    try:
+        with jsonlines.open(f"{save_path}/log.jsonl", "r") as file:
+            for item in file:
+                dealt_url.add(item['url'])
+    except:
+        dealt_url=set()
+    return already_downloaded, dealt_url
 
 def main():
     # 解析命令行参数
@@ -94,14 +122,13 @@ def main():
     parser.add_argument('--num_shard', default=1, type=int, help='Number of shards')
     parser.add_argument('--data_file', type=str, help='file path')
     parser.add_argument('--save_path', type=str, help='save file path')
+    parser.add_argument('--recovery', default=True, type=bool, help='download_recovery')
     args = parser.parse_args()
 
     num_shards = args.num_shard
     file = args.data_file
     save_path = args.save_path
-    global downloaded
-    downloaded=set()
-
+    recovery = args.recovery
     shards = build_segment(file, num_shards, save_path)
 
     try:
@@ -114,6 +141,13 @@ def main():
     if not os.path.exists(save_cate):
         os.mkdir(save_cate)
     save_path = save_cate
+
+    global downloaded, log_url
+    if recovery:
+        downloaded, log_url=downloaded_recovery(save_path)
+    else:
+        downloaded, log_url=set(), set()
+    print(downloaded)
     processes = []
     for shard in shards:
         p = Process(target=traverse_data, args=(shard,save_path))
@@ -123,6 +157,8 @@ def main():
     # 等待所有进程完成
     for p in processes:
         p.join()
+
+    print(f"finish downloading:{file}, save to {save_path}!\n")
 
 if __name__ == "__main__":
     main()
